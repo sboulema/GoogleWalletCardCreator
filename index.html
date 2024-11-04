@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Google Wallet Card Creator</title>
+        <link rel="icon" href="img/Google-Wallet.svg">
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@1.0.2/css/bulma.min.css">
+        <style>
+            .draggable {
+                touch-action: none;
+                user-select: none;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="columns is-centered">
+                <div class="column is-three-fifths">
+                    <nav class="level mt-3">
+                        <div class="level-left">
+                            <div class="level-item">
+                                <figure class="image is-64x64">
+                                    <img src="img/Google-Wallet.svg" />
+                                </figure>
+                            </div>
+                            <div class="level-item">
+                                <h1 class="title">Google Wallet Card Creator</h1>
+                            </div>
+                        </div>
+                    </nav>
+
+                    <figure id="card" class="image is-3by2">
+                        <img id="card-background" src="img/credit-card-placeholder.jpg" />
+                        <img id="card-barcode-image" class="draggable is-hidden" />
+                    </figure>
+                    
+                    <div class="buttons mt-3">
+                        <div class="file is-info mb-0">
+                            <label class="file-label">
+                                <input id="card-image-input" class="file-input" type="file" />
+                                <span class="file-cta">
+                                    <span class="file-icon">
+                                        <i class="fas fa-credit-card"></i>
+                                    </span>
+                                    <span class="file-label">Choose a background</span>
+                                </span>
+                            </label>
+                        </div>
+                    </div>
+        
+                    <div class="field">
+                        <label class="label">Barcode value</label>
+                        <p class="control has-icons-left">
+                          <input id="card-barcode-input" class="input" type="text" placeholder="Barcode value" />
+                          <span class="icon is-small is-left">
+                            <i class="fas fa-barcode"></i>
+                          </span>
+                        </p>
+                    </div>
+
+                    <div class="field mt-6">
+                        <button id="save-button" class="button is-success is-fullwidth">
+                            <span class="icon is-small">
+                              <i class="fas fa-save"></i>
+                            </span>
+                            <span>Save</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.0/dist/JsBarcode.all.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/interactjs/dist/interact.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
+        <script src="https://kit.fontawesome.com/63a5893d45.js" crossorigin="anonymous"></script>
+
+        <script>
+            const cardBarcodeInput = document.getElementById("card-barcode-input");
+            const cardBarcodeImage = document.getElementById("card-barcode-image");
+            const cardBackgroundImage = document.getElementById("card-background");
+
+            cardBarcodeInput
+                .addEventListener("keyup", function() {
+                    JsBarcode(
+                        "#card-barcode-image",
+                        cardBarcodeInput.value,
+                        {
+                            displayValue: false,
+                        });
+                    cardBarcodeImage.style.maxWidth = `${cardBackgroundImage.width / 3}px`;
+                    cardBarcodeImage.style.maxHeight = `${cardBackgroundImage.height / 4}px`;
+                    cardBarcodeImage.classList.remove("is-hidden");
+                });
+
+            document
+                .getElementById("card-image-input")
+                .addEventListener("change", function() {
+                    cardBackgroundImage.src = URL.createObjectURL(this.files[0]);
+                    cardBackgroundImage.onload = () => {
+                        URL.revokeObjectURL(cardBackgroundImage.src);
+                    };
+                });
+
+            interact('.draggable')
+                .draggable({
+                    onmove: window.dragMoveListener
+                })
+                .resizable({
+                    preserveAspectRatio: true,
+                    edges: { left: true, right: true, bottom: true, top: true }
+                })
+                .on('resizemove', function (event) {
+                    var target = event.target,
+                        x = (parseFloat(target.getAttribute('data-x')) || 0),
+                        y = (parseFloat(target.getAttribute('data-y')) || 0);
+
+                    // update the element's style
+                    target.style.width  = event.rect.width + 'px';
+                    target.style.height = event.rect.height + 'px';
+
+                    // translate when resizing from top or left edges
+                    x += event.deltaRect.left;
+                    y += event.deltaRect.top;
+
+                    target.style.webkitTransform = target.style.transform =
+                        'translate(' + x + 'px,' + y + 'px)';
+
+                    target.setAttribute('data-x', x);
+                    target.setAttribute('data-y', y);
+                    target.textContent = event.rect.width + '×' + event.rect.height;
+                });
+
+            function dragMoveListener (event) {
+                var target = event.target,
+                    // keep the dragged position in the data-x/data-y attributes
+                    x = (parseFloat(target.getAttribute('data-x')) || 0) + event.dx,
+                    y = (parseFloat(target.getAttribute('data-y')) || 0) + event.dy;
+
+                // translate the element
+                target.style.webkitTransform =
+                target.style.transform =
+                'translate(' + x + 'px, ' + y + 'px)';
+
+                // update the posiion attributes
+                target.setAttribute('data-x', x);
+                target.setAttribute('data-y', y);
+            }
+
+            document
+                .getElementById("save-button")
+                .addEventListener("click", function() {
+                    html2canvas(document.querySelector("#card")).then(canvas => {
+                        canvas.toBlob(function (blob) {
+                            saveAs(blob, "card.png");
+                        });
+                    });
+                });
+        </script>
+    </body>
+</html>
